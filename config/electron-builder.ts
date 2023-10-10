@@ -83,5 +83,11 @@ export default {
       to: 'src',
       filter: ['**/*']
     }
+  ],
+  extraResources: [
+    {
+      from: path.join(path.resolve(), 'config/icons'),
+      to: './icons/'
+    }
   ]
 } as Configuration

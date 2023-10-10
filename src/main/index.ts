@@ -1,4 +1,12 @@
-import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  nativeImage,
+  shell,
+  Tray
+} from 'electron'
 import path from 'path'
 import os from 'os'
 import { store } from './store'
@@ -54,8 +62,43 @@ function createWindow () {
 
   mainWindow.on('resize', () => storeBounds(mainWindow))
   mainWindow.on('move', () => storeBounds(mainWindow))
+  mainWindow.on('close', e => {
+    e.preventDefault()
+    mainWindow.hide()
+  })
 
   checkForUpdateWithInterval()
+}
+
+function createTray () {
+  let iconPath
+  if (isDev) {
+    iconPath = path.resolve('config/icons/windowTray.png')
+  } else {
+    iconPath = path.join(
+      path.dirname(app.getPath('exe')),
+      './resources/icons/windowTray.png'
+    )
+  }
+
+  const icon = nativeImage.createFromPath(iconPath)
+  const tray = new Tray(icon)
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'exit',
+      click () {
+        app.exit()
+      }
+    }
+  ])
+
+  tray.setContextMenu(contextMenu)
+  tray.setToolTip('text snippets')
+  tray.setTitle('massCode')
+  tray.on('click', () => {
+    mainWindow.show()
+  })
 }
 
 const storeBounds = debounce((mainWindow: BrowserWindow) => {
@@ -74,7 +117,7 @@ if (process.defaultApp) {
 
 app.whenReady().then(async () => {
   createWindow()
-
+  createTray()
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
@@ -85,7 +128,11 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit()
+  if (process.platform === 'win32') {
+    // 隐藏
+  } else if (process.platform !== 'darwin') {
+    app.quit()
+  }
 })
 
 app.on('browser-window-focus', () => {
